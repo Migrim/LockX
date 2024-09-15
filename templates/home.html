@@ -1,15 +1,220 @@
-{% extends "base.html" %}
-
-{% block content %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/home.css') }}">
-    <div class="banner">
-        <video autoplay muted loop playsinline>
-            <source src="{{ url_for('static', filename='images/banner.mp4') }}" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-        <div class="banner-text">
-            <h1>Welcome to LockX.org</h1>
-            <p>Your secure file sharing</p>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LockX - File Sharing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: url('/static/images/background2.jpg') center/cover no-repeat;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+        .top-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        .top-bar button {
+            background: white;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .upload-container {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+        }
+        .upload-container.dragover {
+            border-color: rgba(255, 255, 255, 0.9);
+        }
+        .plus {
+            font-size: 50px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .uploaded-file {
+            margin-top: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+        }
+        .uploaded-file img {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: cover;
+            margin-right: 20px;
+            border-radius: 5px;
+        }
+        .uploaded-file-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .uploaded-file-name {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .uploaded-file-size {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .action-buttons {
+            margin-top: 20px;
+            display: none;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .action-buttons button {
+            padding: 10px 20px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+        .action-buttons button.cancel {
+            background-color: rgba(244, 67, 54, 0.2);
+        }
+        .action-buttons button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        .action-buttons button.cancel:hover {
+            background-color: rgba(244, 67, 54, 0.4);
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button>Login</button>
+        <button>Menü</button>
+    </div>
+    <div class="upload-container" id="upload-container">
+        <div class="plus">+</div>
+        <input type="file" id="file-input" accept="image/*">
+        <div id="file-info"></div>
+        <div class="action-buttons" id="action-buttons">
+            <button id="upload-btn">Upload</button>
+            <button class="cancel" id="cancel-btn">Cancel</button>
         </div>
     </div>
-{% endblock %}
+
+    <script>
+        const uploadContainer = document.getElementById('upload-container');
+        const fileInput = document.getElementById('file-input');
+        const fileInfo = document.getElementById('file-info');
+        const plusIcon = document.querySelector('.plus');
+        const actionButtons = document.getElementById('action-buttons');
+        const uploadBtn = document.getElementById('upload-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+
+        uploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.add('dragover');
+        });
+
+        uploadContainer.addEventListener('dragleave', () => {
+            uploadContainer.classList.remove('dragover');
+        });
+
+        uploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFileUpload(file);
+        });
+
+        uploadContainer.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            handleFileUpload(file);
+        });
+
+        function handleFileUpload(file) {
+            if (file) {
+                const filePreview = document.createElement('div');
+                filePreview.className = 'uploaded-file';
+
+                if (file.type.startsWith('image/')) {
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = URL.createObjectURL(file);
+                    filePreview.appendChild(imgPreview);
+                }
+
+                const fileInfoContainer = document.createElement('div');
+                fileInfoContainer.className = 'uploaded-file-info';
+
+                const fileName = document.createElement('div');
+                fileName.className = 'uploaded-file-name';
+                fileName.textContent = file.name;
+
+                const fileSize = document.createElement('div');
+                fileSize.className = 'uploaded-file-size';
+                fileSize.textContent = (file.size / 1024).toFixed(2) + ' KB';
+
+                fileInfoContainer.appendChild(fileName);
+                fileInfoContainer.appendChild(fileSize);
+                filePreview.appendChild(fileInfoContainer);
+
+                plusIcon.style.display = 'none';
+                fileInfo.innerHTML = '';  // Clear any previous files
+                fileInfo.appendChild(filePreview);
+
+                actionButtons.style.display = 'flex';  // Show the action buttons
+            }
+        }
+
+        cancelBtn.addEventListener('click', () => {
+            fileInput.value = '';  // Clear the file input
+            plusIcon.style.display = 'block';  // Show the plus icon
+            fileInfo.innerHTML = '';  // Clear the file preview
+            actionButtons.style.display = 'none';  // Hide the action buttons
+        });
+
+        // You can add upload functionality here
+        uploadBtn.addEventListener('click', () => {
+            alert('File uploaded!');  // Placeholder for upload functionality
+        });
+    </script>
+</body>
+</html>
